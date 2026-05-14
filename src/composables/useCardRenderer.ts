@@ -193,7 +193,7 @@ export function useCardRenderer(canvas: Ref<FabricCanvas | null>) {
             originY: 'center',
             top: topEdge + COVER_H / 2,
           })
-          const scale = Math.max(CARD_W / (img.width || 1), COVER_H / (img.height || 1))
+          const scale = Math.min(CARD_W / (img.width || 1), COVER_H / (img.height || 1))
           img.scaleX = scale
           img.scaleY = scale
           img.clipPath = new Rect({
