@@ -1,0 +1,219 @@
+@import "tailwindcss";
+
+/* Design System - Zjin 情侣纪念记录 */
+
+@theme {
+  /* 配色 */
+  --color-primary: #F5E6E0;
+  --color-primary-light: #FDF8F5;
+  --color-primary-dark: #E8D0C8;
+  --color-accent: #E8A0BF;
+  --color-accent-warm: #D4A574;
+  --color-accent-gold: #C9A96E;
+  --color-text: #4A3728;
+  --color-text-light: #8B7B6B;
+  --color-text-muted: #B5A89A;
+  --color-bg: #FEFCFB;
+  --color-bg-warm: #FFF9F5;
+  --color-bg-card: rgba(255, 255, 255, 0.85);
+  --color-border: rgba(74, 55, 40, 0.08);
+  --color-border-light: rgba(74, 55, 40, 0.04);
+  --color-shadow: rgba(74, 55, 40, 0.06);
+  --color-overlay: rgba(74, 55, 40, 0.3);
+
+  /* 圆角 */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+
+  /* 字体 */
+  --font-sans: "SF Pro Display", "PingFang SC", "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Caveat", "Ma Shan Zheng", cursive;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  /* 动画 */
+  --ease-soft: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* 间距 */
+  --spacing-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* 全局样式 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+#app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 毛玻璃效果 */
+.glass {
+  background: var(--color-bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+}
+
+/* 柔和阴影 */
+.shadow-soft {
+  box-shadow: 0 4px 24px var(--color-shadow);
+}
+
+.shadow-float {
+  box-shadow: 0 8px 32px rgba(74, 55, 40, 0.1), 0 2px 8px rgba(74, 55, 40, 0.05);
+}
+
+/* 卡片样式 */
+.card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: 0 4px 24px var(--color-shadow);
+  transition: transform 0.3s var(--ease-soft), box-shadow 0.3s var(--ease-soft);
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(74, 55, 40, 0.1);
+}
+
+/* 按钮样式 */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-warm) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 0.75rem 2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-soft);
+  box-shadow: 0 4px 16px rgba(232, 160, 191, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(232, 160, 191, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--color-primary);
+  color: var(--color-text);
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 0.75rem 2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-soft);
+}
+
+.btn-secondary:hover {
+  background: var(--color-primary-dark);
+}
+
+/* 输入框样式 */
+.input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  font-size: 0.95rem;
+  color: var(--color-text);
+  transition: all 0.3s var(--ease-soft);
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(232, 160, 191, 0.15);
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* 页面过渡 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s var(--ease-soft);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.4s var(--ease-soft);
+}
+
+.slide-up-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 手写风格字体 */
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* 安全区域适配 */
+.safe-bottom {
+  padding-bottom: calc(var(--spacing-safe-bottom) + 0.5rem);
+}
