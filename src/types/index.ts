@@ -77,9 +77,48 @@ export interface DrawState {
 export interface CanvasDrawing {
   id: string
   couple_id: string
-  path_data: any
+  path_data: Record<string, unknown>
   sort_order: number
   created_at: string
+}
+
+// 撤销/重做操作类型
+export type CanvasOperationType =
+  | 'card:move'
+  | 'card:create'
+  | 'card:delete'
+  | 'draw:path'
+  | 'draw:erase'
+
+export interface CanvasOperation {
+  type: CanvasOperationType
+  timestamp: number
+  data: CardMoveData | CardCreateData | CardDeleteData | DrawPathData | DrawEraseData
+}
+
+export interface CardMoveData {
+  memoryId: string
+  from: { x: number; y: number }
+  to: { x: number; y: number }
+}
+
+export interface CardCreateData {
+  memoryId: string
+}
+
+export interface CardDeleteData {
+  memoryId: string
+  memory: Memory
+}
+
+export interface DrawPathData {
+  drawingId: string
+  pathJson: Record<string, unknown>
+}
+
+export interface DrawEraseData {
+  drawingId: string
+  pathJson: Record<string, unknown>
 }
 
 export interface MemoryFormData {

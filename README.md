@@ -18,13 +18,16 @@
 ### V0.3 - 无限画布
 - Fabric.js 无限画布，支持平移和缩放
 - 回忆卡片渲染（封面图、标题、日期、标签、置顶标记）
-- 单击缩放预览，双击进入详情
+- 单击卡片弹出详情预览面板，双击进入编辑
 - 右键/长按上下文菜单（置顶、编辑、删除）
 - 手绘涂鸦工具（画笔、荧光笔、橡皮擦）
-- 涂鸦持久化（Supabase 存储与恢复）
+- 涂鸦逐条持久化（Supabase 增量 CRUD + 实时同步）
 - 画布内搜索（按标题、内容、标签过滤）
 - 双指缩放（触屏设备）
-- 伴侣实时同步（Supabase Realtime）
+- 伴侣实时同步（回忆 + 涂鸦 Supabase Realtime）
+- 撤销/重做（Ctrl+Z / Ctrl+Shift+Z，支持卡片移动和涂鸦操作）
+- 自定义确认弹窗（替代浏览器 confirm）
+- Composable 架构（useCanvas / usePanZoom / useDrawTools / useCardRenderer / useDrawingPersistence / useHistory）
 
 ## 技术栈
 
@@ -52,10 +55,17 @@ src/
 │   ├── QuickCreatePanel.vue   # 画布快速创建面板
 │   ├── CanvasToolbar.vue      # 绘图工具栏
 │   ├── CanvasContextMenu.vue  # 右键/长按菜单
-│   └── CanvasSearchBar.vue    # 画布搜索栏
+│   ├── CanvasSearchBar.vue    # 画布搜索栏
+│   └── ConfirmDialog.vue      # 自定义确认弹窗
 ├── composables/
-│   ├── useSupabase.ts    # Supabase 客户端
-│   └── useRealtime.ts    # Realtime 订阅
+│   ├── useSupabase.ts          # Supabase 客户端
+│   ├── useRealtime.ts          # Realtime 订阅
+│   ├── useCanvas.ts            # FabricCanvas 生命周期、坐标转换
+│   ├── usePanZoom.ts           # 平移、滚轮缩放、双指缩放
+│   ├── useDrawTools.ts         # 画笔/荧光笔/橡皮擦状态管理
+│   ├── useCardRenderer.ts      # 卡片增量渲染、动画、搜索
+│   ├── useDrawingPersistence.ts # 涂鸦逐条 CRUD + 实时同步
+│   └── useHistory.ts           # 撤销/重做栈
 ├── router/
 │   └── index.ts          # 路由配置
 ├── stores/
@@ -161,6 +171,8 @@ npm run build
 - 上下文菜单操作
 - 画布内搜索
 - 实时同步
+- 撤销/重做
+- Composable 架构重构
 
 ### V0.2 - 回忆记录
 - 回忆 CRUD + 图片上传

@@ -28,7 +28,6 @@ onUnmounted(() => {
 
 function handleClear() {
   query.value = ''
-  emit('clear')
 }
 </script>
 

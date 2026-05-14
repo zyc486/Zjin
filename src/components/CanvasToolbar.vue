@@ -16,7 +16,7 @@ const colors = [
 
 function selectTool(t: DrawTool) {
   tool.value = t
-  if (t !== 'select') expanded.value = true
+  expanded.value = t !== 'select'
   emitChange()
 }
 
