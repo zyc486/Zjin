@@ -6,14 +6,25 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const auth = useAuthStore()
 
-const email = ref('')
+const selectedAccount = ref<number | null>(null)
 const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
+const accounts = [
+  { id: 1, label: '👦', name: '我的账号' },
+  { id: 2, label: '👧', name: 'TA 的账号' },
+]
+
+function selectAccount(id: number) {
+  selectedAccount.value = id
+  password.value = ''
+  error.value = ''
+}
+
 async function handleLogin() {
-  if (!email.value || !password.value) {
-    error.value = '请填写邮箱和密码'
+  if (!selectedAccount.value || !password.value) {
+    error.value = '请输入密码'
     return
   }
 
@@ -21,7 +32,12 @@ async function handleLogin() {
   error.value = ''
 
   try {
-    await auth.login(email.value, password.value)
+    // 根据选择的账号确定邮箱
+    const email = selectedAccount.value === 1
+      ? 'user1@zjin.app'
+      : 'user2@zjin.app'
+
+    await auth.login(email, password.value)
     router.push('/')
   } catch (e: any) {
     error.value = e.message || '登录失败'
@@ -39,36 +55,38 @@ async function handleLogin() {
       <p class="subtitle">属于我们的回忆空间</p>
     </div>
 
-    <form class="login-form" @submit.prevent="handleLogin">
-      <div class="form-group">
-        <input
-          v-model="email"
-          type="email"
-          class="input"
-          placeholder="邮箱"
-          autocomplete="email"
-        />
-      </div>
+    <!-- 选择账号 -->
+    <div class="account-picker">
+      <button
+        v-for="acc in accounts"
+        :key="acc.id"
+        class="account-btn"
+        :class="{ active: selectedAccount === acc.id }"
+        @click="selectAccount(acc.id)"
+      >
+        <span class="account-avatar">{{ acc.label }}</span>
+        <span class="account-name">{{ acc.name }}</span>
+      </button>
+    </div>
 
+    <!-- 输入密码 -->
+    <form v-if="selectedAccount" class="login-form" @submit.prevent="handleLogin">
       <div class="form-group">
         <input
           v-model="password"
           type="password"
           class="input"
-          placeholder="密码"
+          placeholder="输入密码"
           autocomplete="current-password"
+          autofocus
         />
       </div>
 
       <p v-if="error" class="error-text">{{ error }}</p>
 
       <button type="submit" class="btn-primary w-full" :disabled="loading">
-        {{ loading ? '登录中...' : '登录' }}
+        {{ loading ? '登录中...' : '进入空间' }}
       </button>
-
-      <div class="links">
-        <router-link to="/register" class="link">还没有账号？注册</router-link>
-      </div>
     </form>
   </div>
 </template>
@@ -111,9 +129,55 @@ async function handleLogin() {
   color: var(--color-text-light);
 }
 
+.account-picker {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.account-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--color-bg-card);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 2rem;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-soft);
+  min-width: 120px;
+}
+
+.account-btn:active {
+  transform: scale(0.96);
+}
+
+.account-btn.active {
+  border-color: var(--color-accent);
+  background: rgba(232, 160, 191, 0.08);
+  box-shadow: 0 4px 20px rgba(232, 160, 191, 0.2);
+}
+
+.account-avatar {
+  font-size: 2.5rem;
+}
+
+.account-name {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  font-weight: 500;
+}
+
 .login-form {
   width: 100%;
-  max-width: 360px;
+  max-width: 320px;
+  animation: slideUp 0.3s var(--ease-soft);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .form-group {
@@ -129,21 +193,5 @@ async function handleLogin() {
 
 .w-full {
   width: 100%;
-}
-
-.links {
-  text-align: center;
-  margin-top: 1.5rem;
-}
-
-.link {
-  color: var(--color-text-light);
-  font-size: 0.9rem;
-  text-decoration: none;
-  transition: color 0.3s;
-}
-
-.link:hover {
-  color: var(--color-accent);
 }
 </style>

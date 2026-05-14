@@ -11,18 +11,6 @@ const router = createRouter({
       meta: { requiresAuth: false },
     },
     {
-      path: '/register',
-      name: 'register',
-      component: () => import('@/views/RegisterView.vue'),
-      meta: { requiresAuth: false },
-    },
-    {
-      path: '/accept-invite',
-      name: 'accept-invite',
-      component: () => import('@/views/AcceptInviteView.vue'),
-      meta: { requiresAuth: false },
-    },
-    {
       path: '/',
       name: 'canvas',
       component: () => import('@/views/CanvasView.vue'),
@@ -52,12 +40,6 @@ const router = createRouter({
       component: () => import('@/views/StatsView.vue'),
       meta: { requiresAuth: true },
     },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: () => import('@/views/SettingsView.vue'),
-      meta: { requiresAuth: true },
-    },
   ],
 })
 
@@ -65,7 +47,6 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
 
-  // 等待初始化完成
   if (auth.loading) {
     await new Promise<void>((resolve) => {
       const unwatch = setInterval(() => {
@@ -77,18 +58,11 @@ router.beforeEach(async (to) => {
     })
   }
 
-  // 需要登录但未登录 → 跳转登录页
   if (to.meta.requiresAuth && !auth.isLoggedIn) {
     return { name: 'login' }
   }
 
-  // 已登录但没有情侣空间 → 跳转邀请页
-  if (to.meta.requiresAuth && auth.isLoggedIn && !auth.hasCouple) {
-    return { name: 'accept-invite' }
-  }
-
-  // 已登录访问登录页 → 跳转首页
-  if (!to.meta.requiresAuth && auth.isLoggedIn && (to.name === 'login' || to.name === 'register')) {
+  if (!to.meta.requiresAuth && auth.isLoggedIn && to.name === 'login') {
     return { name: 'canvas' }
   }
 })

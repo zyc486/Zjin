@@ -1,18 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
-const auth = useAuthStore()
 
 const tabs = [
   { name: 'canvas', path: '/', icon: 'canvas', label: '画布' },
   { name: 'timeline', path: '/timeline', icon: 'timeline', label: '时间轴' },
   { name: 'memory-new', path: '/memory/new', icon: 'add', label: '' },
   { name: 'stats', path: '/stats', icon: 'stats', label: '统计' },
-  { name: 'settings', path: '/settings', icon: 'settings', label: '设置' },
 ]
 
 const activeTab = computed(() => route.name as string)
@@ -72,12 +69,6 @@ function navigateTo(tab: typeof tabs[0]) {
           <rect x="3" y="12" width="4" height="9" rx="1" />
           <rect x="10" y="6" width="4" height="15" rx="1" />
           <rect x="17" y="3" width="4" height="18" rx="1" />
-        </svg>
-
-        <!-- 设置图标 -->
-        <svg v-if="tab.icon === 'settings'" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
         </svg>
 
         <span v-if="tab.label" class="nav-label">{{ tab.label }}</span>
