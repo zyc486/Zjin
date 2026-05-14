@@ -35,8 +35,8 @@ export interface Memory {
   location_lng: number | null
   bg_color: string | null
   card_style: string | null
-  canvas_x: number
-  canvas_y: number
+  canvas_x: number | null
+  canvas_y: number | null
   canvas_width: number
   canvas_height: number
   canvas_rotation: number
@@ -64,6 +64,22 @@ export interface MemoryTag {
   id: string
   memory_id: string
   tag: string
+}
+
+export type DrawTool = 'select' | 'pen' | 'highlighter' | 'eraser'
+
+export interface DrawState {
+  tool: DrawTool
+  color: string
+  size: number
+}
+
+export interface CanvasDrawing {
+  id: string
+  couple_id: string
+  path_data: any
+  sort_order: number
+  created_at: string
 }
 
 export interface MemoryFormData {

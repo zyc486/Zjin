@@ -279,6 +279,70 @@ export const useMemoryStore = defineStore('memory', () => {
       .subscribe()
   }
 
+  // 置顶/取消置顶（乐观更新）
+  async function togglePin(id: string): Promise<void> {
+    const m = memories.value.find(m => m.id === id)
+    if (!m) return
+    const prev = m.is_pinned
+    m.is_pinned = !prev
+    const { error } = await supabase
+      .from('memories')
+      .update({ is_pinned: m.is_pinned })
+      .eq('id', id)
+    if (error) {
+      m.is_pinned = prev
+      console.error('置顶操作失败:', error)
+    }
+  }
+
+  // 画布上快速创建回忆
+  async function createMemoryOnCanvas(
+    title: string,
+    canvasX: number,
+    canvasY: number
+  ): Promise<string> {
+    const auth = useAuthStore()
+    if (!auth.user?.couple_id) throw new Error('未登录')
+
+    const { data: memory, error } = await supabase
+      .from('memories')
+      .insert({
+        couple_id: auth.user.couple_id,
+        author_id: auth.user.id,
+        title: title || '新回忆',
+        content: '',
+        date: new Date().toISOString().slice(0, 10),
+        canvas_x: canvasX,
+        canvas_y: canvasY,
+      })
+      .select('*, media:memory_media(*), tags:memory_tags(*), author:users(*)')
+      .single()
+
+    if (error || !memory) throw new Error(`创建失败: ${error?.message}`)
+
+    memories.value.unshift(memory as Memory)
+    return memory.id
+  }
+
+  // 更新画布位置
+  async function updateCanvasPosition(
+    id: string,
+    pos: { canvas_x: number; canvas_y: number }
+  ) {
+    const { error } = await supabase
+      .from('memories')
+      .update(pos)
+      .eq('id', id)
+
+    if (!error) {
+      const m = memories.value.find(m => m.id === id)
+      if (m) {
+        m.canvas_x = pos.canvas_x
+        m.canvas_y = pos.canvas_y
+      }
+    }
+  }
+
   // 取消订阅
   function unsubscribeRealtime() {
     if (realtimeChannel) {
@@ -295,8 +359,11 @@ export const useMemoryStore = defineStore('memory', () => {
     fetchOne,
     fetchMemories,
     createMemory,
+    createMemoryOnCanvas,
     updateMemory,
     deleteMemory,
+    togglePin,
+    updateCanvasPosition,
     subscribeRealtime,
     unsubscribeRealtime,
   }

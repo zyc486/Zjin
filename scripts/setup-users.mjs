@@ -15,7 +15,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 const USER1_EMAIL = 'user1@zjin.app'
 const USER2_EMAIL = 'user2@zjin.app'
-const PASSWORD = 'zjin2026'
+const PASSWORD = '123456'
 
 async function query(sql) {
   const res = await fetch(`https://api.supabase.com/v1/projects/${PROJECT}/database/query`, {
@@ -66,8 +66,8 @@ async function main() {
 
   // 4. 创建用户资料
   console.log('Creating user profiles...')
-  await query(`INSERT INTO users (id, nickname, couple_id) VALUES ('${user1Id}', 'A', '${coupleId}') ON CONFLICT (id) DO UPDATE SET nickname = 'A', couple_id = '${coupleId}'`)
-  await query(`INSERT INTO users (id, nickname, couple_id) VALUES ('${user2Id}', 'B', '${coupleId}') ON CONFLICT (id) DO UPDATE SET nickname = 'B', couple_id = '${coupleId}'`)
+  await query(`INSERT INTO users (id, nickname, couple_id) VALUES ('${user1Id}', 'zyc', '${coupleId}') ON CONFLICT (id) DO UPDATE SET nickname = 'zyc', couple_id = '${coupleId}'`)
+  await query(`INSERT INTO users (id, nickname, couple_id) VALUES ('${user2Id}', 'lj', '${coupleId}') ON CONFLICT (id) DO UPDATE SET nickname = 'lj', couple_id = '${coupleId}'`)
 
   // 5. 创建默认分类
   console.log('Creating categories...')
