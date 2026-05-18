@@ -182,13 +182,17 @@ export function useCardRenderer(canvas: Ref<FabricCanvas | null>) {
 
     // 异步加载封面图
     if (hasImage) {
-      const firstMedia = [...memory.media!].sort((a, b) => a.sort_order - b.sort_order)[0]
+      const sortedMedia = [...memory.media!].sort((a, b) => a.sort_order - b.sort_order)
+      const firstMedia = sortedMedia[0]
       if (firstMedia?.url) {
-        const imgEl = new Image()
-        imgEl.crossOrigin = 'anonymous'
-        imgEl.onload = () => {
+        FabricImage.fromURL(firstMedia.url, { crossOrigin: 'anonymous' }).then((img) => {
           if (!canvas.value) return
-          const img = new FabricImage(imgEl, {
+          // 重建卡片 Group，将图片插入到最底层
+          const x = cardGroup.left ?? 0
+          const y = cardGroup.top ?? 0
+          c.remove(cardGroup)
+
+          img.set({
             originX: 'center',
             originY: 'center',
             top: topEdge + COVER_H / 2,
@@ -204,11 +208,26 @@ export function useCardRenderer(canvas: Ref<FabricCanvas | null>) {
             originX: 'center',
             originY: 'center',
           })
-          cardGroup.insertAt(0, img)
-          cardGroup.setCoords()
-          canvas.value?.requestRenderAll()
-        }
-        imgEl.src = firstMedia.url
+
+          const newGroup = new Group([img, ...cardGroup.getObjects()], {
+            left: x,
+            top: y,
+            originX: 'center',
+            originY: 'center',
+            hasControls: false,
+            hasBorders: false,
+            hoverCursor: 'pointer',
+            moveCursor: 'grabbing',
+            subTargetCheck: false,
+            _zoomed: false,
+          })
+          ;(newGroup as any).memoryId = memory.id
+          c.add(newGroup)
+          cardMap.set(memory.id, newGroup)
+          c.requestRenderAll()
+        }).catch((err) => {
+          console.warn('封面图加载失败:', firstMedia.url, err)
+        })
       }
     } else {
       const emoji = new Text(memory.title?.[0] || '✦', {
@@ -243,18 +262,87 @@ export function useCardRenderer(canvas: Ref<FabricCanvas | null>) {
 
   function updateCard(memory: Memory) {
     const c = canvas.value
-    const oldGroup = cardMap.get(memory.id)
-    if (!c || !oldGroup) return
+    const group = cardMap.get(memory.id)
+    if (!c || !group) return
 
-    // 记录旧位置
-    const x = oldGroup.left ?? 0
-    const y = oldGroup.top ?? 0
+    const objects = group.getObjects()
+    const isPinned = memory.is_pinned
+    const hasImage = objects.some(o => o instanceof FabricImage)
 
-    // 移除旧卡片，创建新卡片
-    c.remove(oldGroup)
-    cardMap.delete(memory.id)
-    cardState.delete(memory.id)
-    addCard(memory, x, y)
+    // 找到各元素：bg(Rect fill=#FFF)、titleText(Text fontSize=16)、tagTexts(Text fontSize=11 fill=#C4B5A8)、pinBg/pinIcon
+    const bg = objects.find(o => o instanceof Rect && (o as Rect).fill === '#FFFFFF') as Rect | undefined
+    const titleText = objects.find(o => o instanceof Text && (o as Text).fontSize === 16) as Text | undefined
+    const tagTexts = objects.filter(o => o instanceof Text && (o as Text).fontSize === 11 && (o as Text).fill === '#C4B5A8') as Text[]
+    const pinBg = objects.find(o => o instanceof Rect && (o as Rect).fill === 'rgba(232, 160, 191, 0.9)') as Rect | undefined
+    const pinIcon = objects.find(o => o instanceof Text && (o as Text).text === '♥') as Text | undefined
+
+    // 更新标题
+    if (titleText) {
+      titleText.text = memory.title || '未命名'
+    }
+
+    // 更新背景（置顶样式）
+    if (bg) {
+      bg.set({
+        shadow: isPinned ? '0 6px 28px rgba(232, 160, 191, 0.35)' : '0 4px 20px rgba(74, 55, 40, 0.12)',
+        stroke: isPinned ? 'rgba(232, 160, 191, 0.5)' : 'rgba(74, 55, 40, 0.06)',
+        strokeWidth: isPinned ? 2 : 1,
+      })
+    }
+
+    // 更新标签
+    const tags = memory.tags?.slice(0, 2) || []
+    const H = hasImage ? COVER_H + TEXT_H : TEXT_H
+    const tagY = (hasImage ? -H / 2 + COVER_H + 18 : -24) + 22 + 20
+    // 移除旧标签
+    tagTexts.forEach(t => group.remove(t))
+    // 添加新标签
+    let tagLeft = -CARD_W / 2 + PAD
+    for (const tag of tags) {
+      const tt = new Text(`#${tag.tag}`, {
+        fontSize: 11,
+        fontFamily: FONT,
+        fill: '#C4B5A8',
+        originX: 'left',
+        originY: 'center',
+        left: tagLeft,
+        top: tagY,
+      })
+      group.add(tt)
+      tagLeft += (tag.tag.length + 1) * 12 + 10
+    }
+
+    // 更新置顶标记
+    const topEdge = -H / 2
+    if (isPinned && !pinBg) {
+      // 添加置顶标记
+      const newPinBg = new Rect({
+        width: 24, height: 24, rx: 12, ry: 12,
+        fill: 'rgba(232, 160, 191, 0.9)',
+        originX: 'center', originY: 'center',
+        left: CARD_W / 2 - PAD - 12, top: topEdge + PAD + 12,
+        selectable: false, evented: false,
+      })
+      const newPinIcon = new Text('♥', {
+        fontSize: 13, fill: '#FFFFFF',
+        originX: 'center', originY: 'center',
+        left: CARD_W / 2 - PAD - 12, top: topEdge + PAD + 13,
+        selectable: false, evented: false,
+      })
+      group.add(newPinBg)
+      group.add(newPinIcon)
+    } else if (!isPinned && pinBg) {
+      group.remove(pinBg)
+      if (pinIcon) group.remove(pinIcon)
+    }
+
+    cardState.set(memory.id, {
+      title: memory.title || '',
+      isPinned: !!memory.is_pinned,
+      tags: memory.tags?.map(t => t.tag).join(',') || '',
+    })
+
+    c.requestRenderAll()
   }
 
   function moveCard(memoryId: string, x: number, y: number) {

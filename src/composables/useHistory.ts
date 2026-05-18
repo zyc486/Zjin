@@ -74,6 +74,10 @@ export function useHistory() {
     const isMod = e.ctrlKey || e.metaKey
     if (!isMod) return
 
+    // 焦点在输入框时不拦截，保持浏览器默认行为
+    const tag = (e.target as HTMLElement)?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return
+
     if (e.key === 'z' && !e.shiftKey) {
       e.preventDefault()
       undo()

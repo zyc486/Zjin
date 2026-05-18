@@ -36,15 +36,15 @@ const history = useHistory()
 
 // 注册撤销/重做处理器
 history.registerHandler('card:move',
-  async (op) => { // undo
+  async (op) => {
     const d = op.data as CardMoveData
     cardRenderer.moveCard(d.memoryId, d.from.x, d.from.y)
-    memoryStore.updateCanvasPosition(d.memoryId, { canvas_x: d.from.x, canvas_y: d.from.y })
+    await memoryStore.updateCanvasPosition(d.memoryId, { canvas_x: d.from.x, canvas_y: d.from.y })
   },
-  async (op) => { // redo
+  async (op) => {
     const d = op.data as CardMoveData
     cardRenderer.moveCard(d.memoryId, d.to.x, d.to.y)
-    memoryStore.updateCanvasPosition(d.memoryId, { canvas_x: d.to.x, canvas_y: d.to.y })
+    await memoryStore.updateCanvasPosition(d.memoryId, { canvas_x: d.to.x, canvas_y: d.to.y })
   },
 )
 
@@ -72,7 +72,10 @@ history.registerHandler('draw:path',
     path.set({ selectable: false, evented: false })
     c.add(path)
     const newId = await drawingPersistence.savePath(d.pathJson)
-    if (newId) drawingPersistence.onPathCreated(path, newId)
+    if (newId) {
+      drawingPersistence.onPathCreated(path, newId)
+      d.drawingId = newId // 更新 ID 确保后续 undo 能找到
+    }
     c.requestRenderAll()
   },
 )
@@ -87,7 +90,10 @@ history.registerHandler('draw:erase',
     path.set({ selectable: false, evented: false })
     c.add(path)
     const newId = await drawingPersistence.savePath(d.pathJson)
-    if (newId) drawingPersistence.onPathCreated(path, newId)
+    if (newId) {
+      drawingPersistence.onPathCreated(path, newId)
+      d.drawingId = newId // 更新 ID 确保后续 redo 能找到
+    }
     c.requestRenderAll()
   },
   async (op) => { // redo: 再次擦除
@@ -131,8 +137,8 @@ onMounted(async () => {
   setupCanvasEvents()
   cardRenderer.syncCards(memoryStore.memories)
   drawingPersistence.restore()
-  drawingPersistence.subscribe()
   panZoom.activate()
+  drawingPersistence.subscribe()
   window.addEventListener('resize', resize)
 })
 
@@ -165,6 +171,9 @@ function setupCanvasEvents() {
   c.on('mouse:down', (opt) => {
     const e = opt.e as MouseEvent | TouchEvent
     const target = opt.target as any
+
+    // 右键/Ctrl+Click 不处理拖拽/点击，mouse:down:before 已处理菜单
+    if ('button' in e && (e.button === 2 || e.ctrlKey)) return
 
     // 橡皮擦
     if (drawTools.handleCanvasClick(opt)) return
@@ -221,8 +230,8 @@ function setupCanvasEvents() {
 
       if (wasDrag) {
         // 拖拽结束，保存位置 + 记录撤销
-        const worldPos = screenToWorld(objX, objY)
-        const fromWorld = screenToWorld(dragStartPos!.x, dragStartPos!.y)
+        const worldPos = { x: objX, y: objY } /* world coords */
+        const fromWorld = { x: dragStartPos!.x, y: dragStartPos!.y }
         memoryStore.updateCanvasPosition(target.memoryId, { canvas_x: worldPos.x, canvas_y: worldPos.y })
         history.push({
           type: 'card:move',
@@ -257,8 +266,8 @@ function setupCanvasEvents() {
       detailMemory.value = null
       router.push(`/memory/${target.memoryId}`)
     } else {
-      // 空白双击 → 快速创建
-      const pos = screenToWorld(opt.pointer.x, opt.pointer.y)
+      // 空白双击 → 快速创建（opt.pointer 已是世界坐标）
+      const pos = { x: opt.pointer.x, y: opt.pointer.y }
       quickCreatePos.value = { x: pos.x, y: pos.y }
       showQuickCreate.value = true
     }
@@ -480,6 +489,82 @@ async function handleLogout() {
   pointer-events: auto;
 }
 
+.canvas-host {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* 空状态 */
+.empty-state {
+  position: absolute;
+  top: 52px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.empty-hint {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* 浮动创建按钮 */
+.fab-create {
+  position: absolute;
+  bottom: calc(140px + env(safe-area-inset-bottom, 0px));
+  right: 1.25rem;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-warm) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 90;
+  box-shadow: 0 6px 20px rgba(232, 160, 191, 0.45);
+  transition: all 0.3s var(--ease-soft);
+}
+
+.fab-create svg {
+  width: 24px;
+  height: 24px;
+}
+
+.fab-create:active {
+  transform: scale(0.9);
+  box-shadow: 0 3px 12px rgba(232, 160, 191, 0.35);
+}
+
+/* 过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s var(--ease-soft);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 .app-title {
   font-size: 1.5rem;
   color: var(--color-accent);
@@ -560,79 +645,5 @@ async function handleLogout() {
   position: fixed;
   inset: 0;
   z-index: 150;
-}
-
-.canvas-host {
-  position: absolute;
-  top: 0;
-  left: 0;
-  touch-action: none;
-}
-
-/* 空状态 */
-.empty-state {
-  position: absolute;
-  top: 52px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  z-index: 50;
-  pointer-events: none;
-}
-
-.empty-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.empty-hint {
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
-}
-
-/* 浮动创建按钮 */
-.fab-create {
-  position: absolute;
-  bottom: calc(140px + env(safe-area-inset-bottom, 0px));
-  right: 1.25rem;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  border: none;
-  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-warm) 100%);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 90;
-  box-shadow: 0 6px 20px rgba(232, 160, 191, 0.45);
-  transition: all 0.3s var(--ease-soft);
-}
-
-.fab-create svg {
-  width: 24px;
-  height: 24px;
-}
-
-.fab-create:active {
-  transform: scale(0.9);
-  box-shadow: 0 3px 12px rgba(232, 160, 191, 0.35);
-}
-
-/* 过渡动画 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s var(--ease-soft);
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 </style>

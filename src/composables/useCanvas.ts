@@ -42,14 +42,23 @@ export function useCanvas(canvasRef: Ref<HTMLCanvasElement | null>) {
 
   function resize() {
     if (!canvas.value || !canvasRef.value) return
+    const oldW = canvas.value.getWidth()
+    const oldH = canvas.value.getHeight()
     const w = window.innerWidth
     const h = window.innerHeight - HEADER_HEIGHT
     canvas.value.setDimensions({ width: w, height: h })
+    // 调整视口偏移，保持画面中心不变
+    const vpt = canvas.value.viewportTransform
+    if (vpt) {
+      vpt[4] += (w - oldW) / 2
+      vpt[5] += (h - oldH) / 2
+    }
     const container = canvasRef.value.parentElement
     if (container) {
       container.style.width = w + 'px'
       container.style.height = h + 'px'
     }
+    canvas.value.requestRenderAll()
   }
 
   function dispose() {

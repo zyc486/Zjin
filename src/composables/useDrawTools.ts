@@ -74,9 +74,14 @@ export function useDrawTools(
     c.discardActiveObject()
     c.selection = false
     c.forEachObject((obj) => {
-      if ((obj as any).memoryId) {
+      const isMemory = !!(obj as any).memoryId
+      if (isMemory) {
         obj.selectable = tool === 'select'
         obj.evented = tool === 'select' || tool === 'eraser'
+      } else {
+        // 涂鸦路径：橡皮擦模式下可点击
+        obj.selectable = false
+        obj.evented = tool === 'eraser'
       }
     })
 
